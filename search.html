@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Github Repositories Search</title>
+</head>
+<body>
+  <h1>Github Repositories Search</h1>
+  <form id="search-form">
+    <input type="text" id="search-term" placeholder="Enter a search term">
+    <input type="submit" value="Search">
+  </form>
+  <ul id="results"></ul>
+  <div id="pagination"></div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('#search-form').submit(function(event) {
+        event.preventDefault();
+        search();
+      });
+    });
+
+    function search(page = 1) {
+      const searchTerm = $('#search-term').val();
+      const perPage = 50; // number of results per page
+      const apiUrl = `https://api.github.com/search/repositories?q=${searchTerm}&per_page=${perPage}&page=${page}`;
+
+      $.ajax({
+        url: apiUrl,
+        headers: {
+          'Authorization': 'YOUR_APİ_KEY'
+        },
+        success: function(data, textStatus, xhr) {
+          const linkHeader = xhr.getResponseHeader('Link');
+          const totalPages = linkHeader ? parseInt(linkHeader.match(/page=(\d+)>; rel="last"/)[1]) : 1;
+          const results = data.items.map(item => `<li><a href="${item.html_url}">${item.full_name}</a></li>`).join('');
+          $('#results').html(results);
+          if (totalPages > 1) {
+            const pagination = Array.from({ length: totalPages }, (_, i) => `<a href="#" class="page-link" data-page="${i + 1}">${i + 1}</a>`).join('');
+            $('#pagination').html(pagination);
+            $('.page-link').click(function(event) {
+              event.preventDefault();
+              const page = parseInt($(this).attr('data-page'));
+              search(page);
+            });
+          } else {
+            $('#pagination').html('');
+          }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+          console.log(textStatus, errorThrown);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
